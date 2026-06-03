@@ -470,9 +470,9 @@ if is_p_anc
 if is_v_anc
     v_arrow_shown := false
 
-is_manuel = lb_mode == "Manuel"
-p_step_down = is_manuel and not is_p_anc and not p_arrow_shown and last_f_p < last_f_p[1]
-v_step_up   = is_manuel and not is_v_anc and not v_arrow_shown and last_f_v > last_f_v[1]
+is_arrow_mode = lb_mode == "Manuel" or lb_mode == "Zaman (Manuel Çapa)"
+p_step_down = is_arrow_mode and not is_p_anc and not p_arrow_shown and last_f_p < last_f_p[1]
+v_step_up   = is_arrow_mode and not is_v_anc and not v_arrow_shown and last_f_v > last_f_v[1]
 
 if p_step_down
     p_arrow_shown := true
