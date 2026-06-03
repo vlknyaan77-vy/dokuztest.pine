@@ -411,7 +411,7 @@ f_get_next_gamma(string drawer, float current_val, float[] g1, float[] g3, float
     next_g
 
 // --- MTF SIGNAL TRACKING ---
-f_calc_mtf_signals(string mode, int sens, int lookback) =>
+f_calc_mtf_signals() =>
     float tr_m = ta.tr(true)
     float cur_sz_m = f_kama_atr(tr_m, atr_per)
 
@@ -419,25 +419,20 @@ f_calc_mtf_signals(string mode, int sens, int lookback) =>
     p_g_val_m = p_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(p_gamma_opt) : (p_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(p_gamma_opt_3) : get_pi_val(p_gamma_opt_4))
     v_g_val_m = v_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(v_gamma_opt) : (v_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(v_gamma_opt_3) : get_pi_val(v_gamma_opt_4))
 
-    // Replicate lookback logic for MTF
-    lb_input_m = mode == "Global (Maksimum)" ? 4990 : mode == "Otomatik (Hassasiyet)" ? sens * 150 : lookback
-
-    hb_4990_m = ta.highestbars(high, 4990), lb_4990_m = ta.lowestbars(low, 4990)
-    hb_1500_m = ta.highestbars(high, 1500), lb_1500_m = ta.lowestbars(low, 1500)
-    hb_500_m  = ta.highestbars(high, 500),  lb_500_m  = ta.lowestbars(low, 500)
-
-    int hb_raw_m = mode == "Global (Maksimum)" ? hb_4990_m : mode == "Otomatik (Hassasiyet)" ? hb_1500_m : hb_500_m
-    int lb_raw_m = mode == "Global (Maksimum)" ? lb_4990_m : mode == "Otomatik (Hassasiyet)" ? lb_1500_m : lb_500_m
-
-    p_idx_m = bar_index + hb_raw_m
-    v_idx_m = bar_index + lb_raw_m
+    // Use user-defined anchor times for MTF
+    var int p_idx_m = na
+    var int v_idx_m = na
+    if time <= p_anchor_time
+        p_idx_m := bar_index
+    if time <= v_anchor_time
+        v_idx_m := bar_index
 
     // Initial values at anchors
-    init_p_m = high[math.max(0, bar_index - p_idx_m)]
-    init_v_m = low[math.max(0, bar_index - v_idx_m)]
+    init_p_m = high[math.max(0, bar_index - nz(p_idx_m, bar_index))]
+    init_v_m = low[math.max(0, bar_index - nz(v_idx_m, bar_index))]
 
-    is_p_anc_m = ta.change(p_idx_m) != 0
-    is_v_anc_m = ta.change(v_idx_m) != 0
+    is_p_anc_m = (bar_index == p_idx_m) or (ta.change(p_idx_m) != 0)
+    is_v_anc_m = (bar_index == v_idx_m) or (ta.change(v_idx_m) != 0)
 
     // Get next larger gammas
     p_next_g_m = f_get_next_gamma(p_gamma_drawer_sel, p_g_val_m, starred_gammas_1, starred_gammas_3, starred_gammas_4)
@@ -467,16 +462,16 @@ f_calc_mtf_signals(string mode, int sens, int lookback) =>
         last_v_time := time
     [last_p_time, last_v_time]
 
-[p3, v3]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p5, v5]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p15, v15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p45, v45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p60, v60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p120, v120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p180, v180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[p240, v240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[pD, vD]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
-[pW, vW]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals(lb_mode, lb_sens, auto_lookback))
+[p3, v3]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals())
+[p5, v5]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals())
+[p15, v15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals())
+[p45, v45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals())
+[p60, v60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals())
+[p120, v120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals())
+[p180, v180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals())
+[p240, v240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals())
+[pD, vD]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals())
+[pW, vW]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals())
 
 // Determine latest signal TF and its timestamp
 f_get_latest(p3, p5, p15, p45, p60, p120, p180, p240, pD, pW) =>
