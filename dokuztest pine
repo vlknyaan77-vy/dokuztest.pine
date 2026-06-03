@@ -141,6 +141,7 @@ max_bars_back(cur_sz_unit, 5000)
 max_bars_back(high, 5000)
 max_bars_back(low, 5000)
 max_bars_back(close, 5000)
+max_bars_back(time, 5000)
 
 // 2. Manual Gamma Selections
 float p_gamma_val_manual = p_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(p_gamma_opt) : p_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(p_gamma_opt_3) : get_pi_val(p_gamma_opt_4)
@@ -398,17 +399,115 @@ if barstate.islast
             if array.size(pts) > 1
                 array.push(v_pl, polyline.new(pts, line_color=dr_color, line_width=filt_width))
 
+// Helper to find the next larger gamma in the current drawer
+f_get_next_gamma(string drawer, float current_val, float[] g1, float[] g3, float[] g4) =>
+    float next_g = na
+    float[] arr = drawer == "Çekmece 1" ? g1 : (drawer == "Çekmece 3" ? g3 : g4)
+    if array.size(arr) > 0
+        for i = 0 to array.size(arr) - 2
+            if math.abs(array.get(arr, i) - current_val) < 1e-5
+                next_g := array.get(arr, i + 1)
+                break
+    next_g
+
+// --- MTF SIGNAL TRACKING ---
+f_calc_mtf_signals() =>
+    float tr_m = ta.tr(true)
+    float cur_sz_m = f_kama_atr(tr_m, atr_per)
+
+    // Select manual gammas (MTF context)
+    p_g_val_m = p_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(p_gamma_opt) : (p_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(p_gamma_opt_3) : get_pi_val(p_gamma_opt_4))
+    v_g_val_m = v_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(v_gamma_opt) : (v_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(v_gamma_opt_3) : get_pi_val(v_gamma_opt_4))
+
+    // Use current mode or default extremes if in auto
+    hb_500_m = ta.highestbars(high, 500), lb_500_m = ta.lowestbars(low, 500)
+
+    p_idx_m = bar_index + hb_500_m
+    v_idx_m = bar_index + lb_500_m
+
+    // Initial values at anchors
+    init_p_m = high[math.max(0, bar_index - p_idx_m)]
+    init_v_m = low[math.max(0, bar_index - v_idx_m)]
+
+    is_p_anc_m = ta.change(p_idx_m) != 0
+    is_v_anc_m = ta.change(v_idx_m) != 0
+
+    // Get next larger gammas
+    p_next_g_m = f_get_next_gamma(p_gamma_drawer_sel, p_g_val_m, starred_gammas_1, starred_gammas_3, starred_gammas_4)
+    v_next_g_m = f_get_next_gamma(v_gamma_drawer_sel, v_g_val_m, starred_gammas_1, starred_gammas_3, starred_gammas_4)
+
+    var FiltState fs_p_m = FiltState.new()
+    var FiltState fs_v_m = FiltState.new()
+
+    last_f_p_m = fs_p_m.upd_filt(high, low, cur_sz_m * p_next_g_m, init_p_m, is_p_anc_m)
+    last_f_v_m = fs_v_m.upd_filt(high, low, cur_sz_m * v_next_g_m, init_v_m, is_v_anc_m)
+
+    p_sig = not na(p_next_g_m) and not is_p_anc_m and last_f_p_m < last_f_p_m[1]
+    v_sig = not na(v_next_g_m) and not is_v_anc_m and last_f_v_m > last_f_v_m[1]
+
+    var float last_p_time = na
+    var float last_v_time = na
+    if p_sig
+        last_p_time := time
+    if v_sig
+        last_v_time := time
+    [last_p_time, last_v_time]
+
+[p3, v3]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals())
+[p5, v5]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals())
+[p15, v15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals())
+[p45, v45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals())
+[p60, v60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals())
+[p120, v120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals())
+[p180, v180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals())
+[p240, v240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals())
+[pD, vD]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals())
+[pW, vW]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals())
+
+// Determine latest signal TF and its timestamp
+f_get_latest(p3, p5, p15, p45, p60, p120, p180, p240, pD, pW) =>
+    float max_t = 0.0
+    string best_tf = "Yok"
+    if nz(p3) > max_t
+        max_t := p3, best_tf := "3m"
+    if nz(p5) > max_t
+        max_t := p5, best_tf := "5m"
+    if nz(p15) > max_t
+        max_t := p15, best_tf := "15m"
+    if nz(p45) > max_t
+        max_t := p45, best_tf := "45m"
+    if nz(p60) > max_t
+        max_t := p60, best_tf := "1h"
+    if nz(p120) > max_t
+        max_t := p120, best_tf := "2h"
+    if nz(p180) > max_t
+        max_t := p180, best_tf := "3h"
+    if nz(p240) > max_t
+        max_t := p240, best_tf := "4h"
+    if nz(pD) > max_t
+        max_t := pD, best_tf := "1G"
+    if nz(pW) > max_t
+        max_t := pW, best_tf := "1H"
+    [best_tf, max_t]
+
+[best_tf_p, max_t_p] = f_get_latest(p3, p5, p15, p45, p60, p120, p180, p240, pD, pW)
+[best_tf_v, max_t_v] = f_get_latest(v3, v5, v15, v45, v60, v120, v180, v240, vD, vW)
+
+// Calculate bars ago on current TF
+p_bars_ago = bar_index - ta.valuewhen(time <= max_t_p, bar_index, 0)
+v_bars_ago = bar_index - ta.valuewhen(time <= max_t_v, bar_index, 0)
+
 // Table
 if show_table and barstate.islast
     pos = table_pos == "Top Right" ? position.top_right : table_pos == "Bottom Right" ? position.bottom_right : table_pos == "Top Left" ? position.top_left : table_pos == "Bottom Left" ? position.bottom_left : position.middle_right
-    var table info_tab = table.new(pos, 2, 5, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
+    var table info_tab = table.new(pos, 2, 7, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
     c_bg = color.new(color.gray, 80), c_txt = color.white
     table.cell(info_tab, 0, 0, "💎 Volcanic", bgcolor=color.new(color.black, 40), text_color=color.yellow)
     table.cell(info_tab, 1, 0, "", bgcolor=color.new(color.black, 40))
     table.cell(info_tab, 0, 1, "Parametre", bgcolor=c_bg, text_color=c_txt)
     table.cell(info_tab, 1, 1, "Değer", bgcolor=c_bg, text_color=c_txt)
-    p_label = auto_gamma_mode ? "🤖 Oto" : (p_gamma_drawer_sel == "Çekmece 1" ? "G1" : p_gamma_drawer_sel == "Çekmece 3" ? "G3" : "G4")
-    v_label = auto_gamma_mode ? "🤖 Oto" : (v_gamma_drawer_sel == "Çekmece 1" ? "G1" : v_gamma_drawer_sel == "Çekmece 3" ? "G3" : "G4")
+    p_label = auto_gamma_mode ? "🤖 Oto" : (p_gamma_drawer_sel == "Çekmece 1" ? "G1" : (p_gamma_drawer_sel == "Çekmece 3" ? "G3" : "G4"))
+    v_label = auto_gamma_mode ? "🤖 Oto" : (v_gamma_drawer_sel == "Çekmece 1" ? "G1" : (v_gamma_drawer_sel == "Çekmece 3" ? "G3" : "G4"))
     
     str_p_full = ""
     if array.size(p_g_prevs) > 0
@@ -445,6 +544,12 @@ if show_table and barstate.islast
     table.cell(info_tab, 0, 4, "ATR Period", bgcolor=color.new(color.gray, 90), text_color=c_txt)
     table.cell(info_tab, 1, 4, str.tostring(atr_per, "#.##"), bgcolor=color.new(color.gray, 90), text_color=c_txt)
 
+    table.cell(info_tab, 0, 5, "Son Tepe Ok", bgcolor=color.new(color.blue, 70), text_color=c_txt)
+    table.cell(info_tab, 1, 5, best_tf_p + " (" + (na(p_bars_ago) ? "-" : str.tostring(p_bars_ago)) + " bar önce)", bgcolor=color.new(color.blue, 70), text_color=c_txt)
+
+    table.cell(info_tab, 0, 6, "Son Dip Ok", bgcolor=color.new(color.red, 70), text_color=c_txt)
+    table.cell(info_tab, 1, 6, best_tf_v + " (" + (na(v_bars_ago) ? "-" : str.tostring(v_bars_ago)) + " bar önce)", bgcolor=color.new(color.red, 70), text_color=c_txt)
+
 var label lp = na
 var label lv = na
 int p_idx_label = settled_p_idx
@@ -463,17 +568,6 @@ if not na(v_idx_label)
 
 // Arrow Logic for Valley & Peak (Next larger gamma)
 is_arrow_mode = lb_mode == "Manuel" or lb_mode == "Zaman (Manuel Çapa)"
-
-// Helper to find the next larger gamma in the current drawer
-f_get_next_gamma(string drawer, float current_val, float[] g1, float[] g3, float[] g4) =>
-    float next_g = na
-    float[] arr = drawer == "Çekmece 1" ? g1 : (drawer == "Çekmece 3" ? g3 : g4)
-    if array.size(arr) > 0
-        for i = 0 to array.size(arr) - 2
-            if math.abs(array.get(arr, i) - current_val) < 1e-5
-                next_g := array.get(arr, i + 1)
-                break
-    next_g
 
 v_next_gamma_val = f_get_next_gamma(v_gamma_drawer_sel, v_gamma_val, starred_gammas_1, starred_gammas_3, starred_gammas_4)
 p_next_gamma_val = f_get_next_gamma(p_gamma_drawer_sel, p_gamma_val, starred_gammas_1, starred_gammas_3, starred_gammas_4)
