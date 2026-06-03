@@ -481,7 +481,7 @@ var FiltState fs_v_next = FiltState.new()
 last_f_v_next = fs_v_next.upd_filt(high, low, cur_sz_unit * v_next_gamma_val, init_v_val, is_v_anc)
 
 v_next_step_up = is_arrow_mode and not is_v_anc and last_f_v_next > last_f_v_next[1]
-plotshape(v_next_step_up, "Dip Büyük Gamma Adım Oku", shape.arrowdown, location.abovebar, color.red, size=size.small, offset=0)
+plotshape(v_next_step_up, "Dip Büyük Gamma Adım Oku", shape.arrowdown, location.abovebar, color.red, size=size.normal, offset=0)
 
 alertcondition(settled_p_idx != settled_p_idx[1], "Yeni Tepe", "Otomatik çapa yeni bir tepe noktasına sabitlendi!")
 alertcondition(settled_v_idx != settled_v_idx[1], "Yeni Dip", "Otomatik çapa yeni bir dip noktasına sabitlendi!")
