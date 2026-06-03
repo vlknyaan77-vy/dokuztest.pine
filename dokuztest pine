@@ -460,26 +460,6 @@ if not na(v_idx_label)
     else
         label.set_xy(lv, v_idx_label, low[bar_index - v_idx_label])
 
-// Arrows for Manual Mode
-var bool p_arrow_shown = false
-var bool v_arrow_shown = false
-
-if is_p_anc
-    p_arrow_shown := false
-if is_v_anc
-    v_arrow_shown := false
-
-is_manuel = lb_mode == "Manuel"
-p_step = is_manuel and not is_p_anc and not p_arrow_shown and ta.change(last_f_p) != 0
-v_step = is_manuel and not is_v_anc and not v_arrow_shown and ta.change(last_f_v) != 0
-
-if p_step
-    p_arrow_shown := true
-if v_step
-    v_arrow_shown := true
-
-plotshape(p_step, "Tepe Adım Oku", shape.arrowdown, location.abovebar, color.red, size=size.small)
-plotshape(v_step, "Dip Adım Oku", shape.arrowup, location.belowbar, color.green, size=size.small)
 
 alertcondition(settled_p_idx != settled_p_idx[1], "Yeni Tepe", "Otomatik çapa yeni bir tepe noktasına sabitlendi!")
 alertcondition(settled_v_idx != settled_v_idx[1], "Yeni Dip", "Otomatik çapa yeni bir dip noktasına sabitlendi!")
