@@ -460,51 +460,51 @@ f_calc_mtf_signals() =>
         last_p_time := time
     if v_sig
         last_v_time := time
-    [last_p_time, last_v_time]
 
-[p3, v3]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p5, v5]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p15, v15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p45, v45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p60, v60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p120, v120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p180, v180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p240, v240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[pD, vD]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[pW, vW]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+    p_ago_m = bar_index - ta.valuewhen(time <= last_p_time, bar_index, 0)
+    v_ago_m = bar_index - ta.valuewhen(time <= last_v_time, bar_index, 0)
+    [last_p_time, float(p_ago_m), last_v_time, float(v_ago_m)]
+
+[p3, p3a, v3, v3a]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p5, p5a, v5, v5a]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p15, p15a, v15, v15a] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p45, p45a, v45, v45a] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p60, p60a, v60, v60a] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p120, p120a, v120, v120a] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p180, p180a, v180, v180a] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p240, p240a, v240, v240a] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[pD, pDa, vD, vDa]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[pW, pWa, vW, vWa]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
 
 // Determine latest signal TF and its timestamp
-f_get_latest(p3, p5, p15, p45, p60, p120, p180, p240, pD, pW) =>
+f_get_latest(t3, a3, t5, a5, t15, a15, t45, a45, t60, a60, t120, a120, t180, a180, t240, a240, tD, aD, tW, aW) =>
     float max_t = 0.0
     string best_tf = "Yok"
-    if nz(p3) > max_t
-        max_t := p3, best_tf := "3m"
-    if nz(p5) > max_t
-        max_t := p5, best_tf := "5m"
-    if nz(p15) > max_t
-        max_t := p15, best_tf := "15m"
-    if nz(p45) > max_t
-        max_t := p45, best_tf := "45m"
-    if nz(p60) > max_t
-        max_t := p60, best_tf := "1h"
-    if nz(p120) > max_t
-        max_t := p120, best_tf := "2h"
-    if nz(p180) > max_t
-        max_t := p180, best_tf := "3h"
-    if nz(p240) > max_t
-        max_t := p240, best_tf := "4h"
-    if nz(pD) > max_t
-        max_t := pD, best_tf := "1G"
-    if nz(pW) > max_t
-        max_t := pW, best_tf := "1H"
-    [best_tf, max_t]
+    float best_ago = na
+    if nz(t3) > max_t
+        max_t := t3, best_tf := "3m", best_ago := a3
+    if nz(t5) > max_t
+        max_t := t5, best_tf := "5m", best_ago := a5
+    if nz(t15) > max_t
+        max_t := t15, best_tf := "15m", best_ago := a15
+    if nz(t45) > max_t
+        max_t := t45, best_tf := "45m", best_ago := a45
+    if nz(t60) > max_t
+        max_t := t60, best_tf := "1h", best_ago := a60
+    if nz(t120) > max_t
+        max_t := t120, best_tf := "2h", best_ago := a120
+    if nz(t180) > max_t
+        max_t := t180, best_tf := "3h", best_ago := a180
+    if nz(t240) > max_t
+        max_t := t240, best_tf := "4h", best_ago := a240
+    if nz(tD) > max_t
+        max_t := tD, best_tf := "1G", best_ago := aD
+    if nz(tW) > max_t
+        max_t := tW, best_tf := "1H", best_ago := aW
+    [best_tf, best_ago]
 
-[best_tf_p, max_t_p] = f_get_latest(p3, p5, p15, p45, p60, p120, p180, p240, pD, pW)
-[best_tf_v, max_t_v] = f_get_latest(v3, v5, v15, v45, v60, v120, v180, v240, vD, vW)
-
-// Calculate bars ago on current TF
-p_bars_ago = bar_index - ta.valuewhen(time <= max_t_p, bar_index, 0)
-v_bars_ago = bar_index - ta.valuewhen(time <= max_t_v, bar_index, 0)
+[best_tf_p, p_bars_ago] = f_get_latest(p3, p3a, p5, p5a, p15, p15a, p45, p45a, p60, p60a, p120, p120a, p180, p180a, p240, p240a, pD, pDa, pW, pWa)
+[best_tf_v, v_bars_ago] = f_get_latest(v3, v3a, v5, v5a, v15, v15a, v45, v45a, v60, v60a, v120, v120a, v180, v180a, v240, v240a, vD, vDa, vW, vWa)
 
 // Table
 if show_table and barstate.islast
