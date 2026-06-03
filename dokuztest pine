@@ -462,16 +462,16 @@ f_calc_mtf_signals() =>
         last_v_time := time
     [last_p_time, last_v_time]
 
-[p3, v3]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals())
-[p5, v5]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals())
-[p15, v15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals())
-[p45, v45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals())
-[p60, v60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals())
-[p120, v120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals())
-[p180, v180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals())
-[p240, v240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals())
-[pD, vD]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals())
-[pW, vW]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals())
+[p3, v3]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p5, v5]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p15, v15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p45, v45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p60, v60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p120, v120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p180, v180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[p240, v240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[pD, vD]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[pW, vW]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
 
 // Determine latest signal TF and its timestamp
 f_get_latest(p3, p5, p15, p45, p60, p120, p180, p240, pD, pW) =>
