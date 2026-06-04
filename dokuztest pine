@@ -465,46 +465,55 @@ f_calc_mtf_signals() =>
     v_ago_m = bar_index - ta.valuewhen(time <= last_v_time, bar_index, 0)
     [last_p_time, float(p_ago_m), last_v_time, float(v_ago_m)]
 
-[p3, p3a, v3, v3a]   = request.security(syminfo.tickerid, "3", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p5, p5a, v5, v5a]   = request.security(syminfo.tickerid, "5", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p15, p15a, v15, v15a] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p45, p45a, v45, v45a] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p60, p60a, v60, v60a] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p120, p120a, v120, v120a] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p180, p180a, v180, v180a] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[p240, p240a, v240, v240a] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[pD, pDa, vD, vDa]   = request.security(syminfo.tickerid, "D", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-[pW, pWa, vW, vWa]   = request.security(syminfo.tickerid, "W", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+// Timeframe handling to prevent crash on Monthly/Weekly (Pine Script limits)
+// Only fetch data for timeframes that are >= the current chart's timeframe
+cur_tf_min = timeframe.isdaily ? (timeframe.isweekly ? 10080 : (timeframe.ismonthly ? 43200 : 1440)) : timeframe.multiplier * (timeframe.isseconds ? 1/60 : 1)
+
+f_sec(string tf) =>
+    float[] res = array.new_float(4, na)
+    // Basic TF to minutes mapping
+    tf_min = tf == "3" ? 3 : tf == "5" ? 5 : tf == "15" ? 15 : tf == "45" ? 45 : tf == "60" ? 60 : tf == "120" ? 120 : tf == "180" ? 180 : tf == "240" ? 240 : tf == "D" ? 1440 : tf == "W" ? 10080 : tf == "M" ? 43200 : 0
+    if tf_min >= cur_tf_min
+        [t, a, v, ag] = request.security(syminfo.tickerid, tf, f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+        array.set(res, 0, t), array.set(res, 1, a), array.set(res, 2, v), array.set(res, 3, ag)
+    res
+
+r3   = f_sec("3")
+r5   = f_sec("5")
+r15  = f_sec("15")
+r45  = f_sec("45")
+r60  = f_sec("60")
+r120 = f_sec("120")
+r180 = f_sec("180")
+r240 = f_sec("240")
+rD   = f_sec("D")
+rW   = f_sec("W")
+rM   = f_sec("M")
 
 // Determine latest signal TF and its timestamp
-f_get_latest(t3, a3, t5, a5, t15, a15, t45, a45, t60, a60, t120, a120, t180, a180, t240, a240, tD, aD, tW, aW) =>
+f_get_latest(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM, bool is_peak) =>
     float max_t = 0.0
     string best_tf = "Yok"
     float best_ago = na
-    if nz(t3) > max_t
-        max_t := t3, best_tf := "3m", best_ago := a3
-    if nz(t5) > max_t
-        max_t := t5, best_tf := "5m", best_ago := a5
-    if nz(t15) > max_t
-        max_t := t15, best_tf := "15m", best_ago := a15
-    if nz(t45) > max_t
-        max_t := t45, best_tf := "45m", best_ago := a45
-    if nz(t60) > max_t
-        max_t := t60, best_tf := "1h", best_ago := a60
-    if nz(t120) > max_t
-        max_t := t120, best_tf := "2h", best_ago := a120
-    if nz(t180) > max_t
-        max_t := t180, best_tf := "3h", best_ago := a180
-    if nz(t240) > max_t
-        max_t := t240, best_tf := "4h", best_ago := a240
-    if nz(tD) > max_t
-        max_t := tD, best_tf := "1G", best_ago := aD
-    if nz(tW) > max_t
-        max_t := tW, best_tf := "1H", best_ago := aW
+
+    t_idx = is_peak ? 0 : 2
+    a_idx = is_peak ? 1 : 3
+
+    TFs  = array.from("3m", "5m", "15m", "45m", "1h", "2h", "3h", "4h", "1G", "1H", "1A")
+    Data = array.from(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM)
+
+    for i = 0 to array.size(Data) - 1
+        arr = array.get(Data, i)
+        t_val = array.get(arr, t_idx)
+        if not na(t_val) and t_val > max_t
+            max_t := t_val
+            best_tf := array.get(TFs, i)
+            best_ago := array.get(arr, a_idx)
+
     [best_tf, best_ago]
 
-[best_tf_p, p_bars_ago] = f_get_latest(p3, p3a, p5, p5a, p15, p15a, p45, p45a, p60, p60a, p120, p120a, p180, p180a, p240, p240a, pD, pDa, pW, pWa)
-[best_tf_v, v_bars_ago] = f_get_latest(v3, v3a, v5, v5a, v15, v15a, v45, v45a, v60, v60a, v120, v120a, v180, v180a, v240, v240a, vD, vDa, vW, vWa)
+[best_tf_p, p_bars_ago] = f_get_latest(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM, true)
+[best_tf_v, v_bars_ago] = f_get_latest(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM, false)
 
 // Table
 if show_table and barstate.islast
