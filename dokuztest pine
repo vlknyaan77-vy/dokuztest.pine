@@ -410,16 +410,15 @@ f_get_next_gamma(string drawer, float current_val, float[] g1, float[] g3, float
                 break
     next_g
 
+
 // --- MTF SIGNAL TRACKING ---
 f_calc_mtf_signals() =>
     float tr_m = ta.tr(true)
     float cur_sz_m = f_kama_atr(tr_m, atr_per)
 
-    // Select manual gammas (MTF context)
     p_g_val_m = p_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(p_gamma_opt) : (p_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(p_gamma_opt_3) : get_pi_val(p_gamma_opt_4))
     v_g_val_m = v_gamma_drawer_sel == "Çekmece 1" ? get_pi_val(v_gamma_opt) : (v_gamma_drawer_sel == "Çekmece 3" ? get_pi_val(v_gamma_opt_3) : get_pi_val(v_gamma_opt_4))
 
-    // Use user-defined anchor times for MTF
     var int p_idx_m = na
     var int v_idx_m = na
     if time <= p_anchor_time
@@ -427,14 +426,12 @@ f_calc_mtf_signals() =>
     if time <= v_anchor_time
         v_idx_m := bar_index
 
-    // Initial values at anchors
     init_p_m = high[math.max(0, bar_index - nz(p_idx_m, bar_index))]
     init_v_m = low[math.max(0, bar_index - nz(v_idx_m, bar_index))]
 
     is_p_anc_m = (bar_index == p_idx_m) or (ta.change(p_idx_m) != 0)
     is_v_anc_m = (bar_index == v_idx_m) or (ta.change(v_idx_m) != 0)
 
-    // Get next larger gammas
     p_next_g_m = f_get_next_gamma(p_gamma_drawer_sel, p_g_val_m, starred_gammas_1, starred_gammas_3, starred_gammas_4)
     v_next_g_m = f_get_next_gamma(v_gamma_drawer_sel, v_g_val_m, starred_gammas_1, starred_gammas_3, starred_gammas_4)
 
@@ -449,13 +446,10 @@ f_calc_mtf_signals() =>
 
     var float last_p_time = na
     var float last_v_time = na
-
-    // Reset signals when anchor changes
     if is_p_anc_m
         last_p_time := na
     if is_v_anc_m
         last_v_time := na
-
     if p_sig
         last_p_time := time
     if v_sig
@@ -465,64 +459,74 @@ f_calc_mtf_signals() =>
     v_ago_m = bar_index - ta.valuewhen(time <= last_v_time, bar_index, 0)
     [last_p_time, float(p_ago_m), last_v_time, float(v_ago_m)]
 
-// Timeframe handling to prevent crash on Monthly/Weekly (Pine Script limits)
-// Only fetch data for timeframes that are >= the current chart's timeframe
 cur_tf_min = timeframe.isdaily ? (timeframe.isweekly ? 10080 : (timeframe.ismonthly ? 43200 : 1440)) : timeframe.multiplier * (timeframe.isseconds ? 1/60 : 1)
 
-f_sec(string tf) =>
-    float[] res = array.new_float(4, na)
-    // Basic TF to minutes mapping
-    tf_min = tf == "3" ? 3 : tf == "5" ? 5 : tf == "15" ? 15 : tf == "45" ? 45 : tf == "60" ? 60 : tf == "120" ? 120 : tf == "180" ? 180 : tf == "240" ? 240 : tf == "D" ? 1440 : tf == "W" ? 10080 : tf == "M" ? 43200 : 0
+// Global scope security calls - Evaluated on target timeframe
+[t3, a3, v3, ag3] = request.security(syminfo.tickerid, "3", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t5, a5, v5, ag5] = request.security(syminfo.tickerid, "5", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t15, a15, v15, ag15] = request.security(syminfo.tickerid, "15", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t45, a45, v45, ag45] = request.security(syminfo.tickerid, "45", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t60, a60, v60, ag60] = request.security(syminfo.tickerid, "60", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t120, a120, v120, ag120] = request.security(syminfo.tickerid, "120", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t180, a180, v180, ag180] = request.security(syminfo.tickerid, "180", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[t240, a240, v240, ag240] = request.security(syminfo.tickerid, "240", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[tD, aD, vD, agD] = request.security(syminfo.tickerid, "D", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[tW, aW, vW, agW] = request.security(syminfo.tickerid, "W", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+[tM, aM, vM, agM] = request.security(syminfo.tickerid, "M", f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+
+f_res_arr(tf_min, t, a, v, ag) =>
+    res = array.new_float(4, na)
     if tf_min >= cur_tf_min
-        [t, a, v, ag] = request.security(syminfo.tickerid, tf, f_calc_mtf_signals(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
-        array.set(res, 0, t), array.set(res, 1, a), array.set(res, 2, v), array.set(res, 3, ag)
+        array.set(res, 0, t)
+        array.set(res, 1, a)
+        array.set(res, 2, v)
+        array.set(res, 3, ag)
     res
 
-r3   = f_sec("3")
-r5   = f_sec("5")
-r15  = f_sec("15")
-r45  = f_sec("45")
-r60  = f_sec("60")
-r120 = f_sec("120")
-r180 = f_sec("180")
-r240 = f_sec("240")
-rD   = f_sec("D")
-rW   = f_sec("W")
-rM   = f_sec("M")
+r3   = f_res_arr(3, t3, a3, v3, ag3)
+r5   = f_res_arr(5, t5, a5, v5, ag5)
+r15  = f_res_arr(15, t15, a15, v15, ag15)
+r45  = f_res_arr(45, t45, a45, v45, ag45)
+r60  = f_res_arr(60, t60, a60, v60, ag60)
+r120 = f_res_arr(120, t120, a120, v120, ag120)
+r180 = f_res_arr(180, t180, a180, v180, ag180)
+r240 = f_res_arr(240, t240, a240, v240, ag240)
+rD   = f_res_arr(1440, tD, aD, vD, agD)
+rW   = f_res_arr(10080, tW, aW, vW, agW)
+rM   = f_res_arr(43200, tM, aM, vM, agM)
 
-// Determine latest signal TF and its timestamp (Refactored to avoid nested array error)
-f_get_latest(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM, bool is_peak) =>
+f_check(r_arr, tf_name, cur_max, cur_tf, cur_ago, t_i, a_i) =>
+    float res_t = cur_max
+    string res_tf = cur_tf
+    float res_ago = cur_ago
+    float t_val = array.get(r_arr, t_i)
+    if not na(t_val) and t_val > cur_max
+        res_t := t_val
+        res_tf := tf_name
+        res_ago := array.get(r_arr, a_i)
+    [res_t, res_tf, res_ago]
+
+f_get_latest(v3, v5, v15, v45, v60, v120, v180, v240, vD, vW, vM, is_peak) =>
     float max_t = 0.0
     string best_tf = "Yok"
     float best_ago = na
-
     t_idx = is_peak ? 0 : 2
     a_idx = is_peak ? 1 : 3
-
-    f_check(float[] r_arr, string tf_name, float cur_max, string cur_tf, float cur_ago, int t_i, int a_i) =>
-        float t_val = array.get(r_arr, t_i)
-        float res_t = cur_max, string res_tf = cur_tf, float res_ago = cur_ago
-        if not na(t_val) and t_val > cur_max
-            res_t := t_val, res_tf := tf_name, res_ago := array.get(r_arr, a_i)
-        [res_t, res_tf, res_ago]
-
-    [max_t, best_tf, best_ago] := f_check(r3, "3m", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r5, "5m", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r15, "15m", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r45, "45m", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r60, "1h", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r120, "2h", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r180, "3h", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(r240, "4h", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(rD, "1G", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(rW, "1H", max_t, best_tf, best_ago, t_idx, a_idx)
-    [max_t, best_tf, best_ago] := f_check(rM, "1A", max_t, best_tf, best_ago, t_idx, a_idx)
-
-    [best_tf, best_ago]
+    [m1, b1, a1] = f_check(v3, "3m", max_t, best_tf, best_ago, t_idx, a_idx)
+    [m2, b2, a2] = f_check(v5, "5m", m1, b1, a1, t_idx, a_idx)
+    [m3, b3, a3] = f_check(v15, "15m", m2, b2, a2, t_idx, a_idx)
+    [m4, b4, a4] = f_check(v45, "45m", m3, b3, a3, t_idx, a_idx)
+    [m5, b5, a5] = f_check(v60, "1h", m4, b4, a4, t_idx, a_idx)
+    [m6, b6, a6] = f_check(v120, "2h", m5, b5, a5, t_idx, a_idx)
+    [m7, b7, a7] = f_check(v180, "3h", m6, b6, a6, t_idx, a_idx)
+    [m8, b8, a8] = f_check(v240, "4h", m7, b7, a7, t_idx, a_idx)
+    [m9, b9, a9] = f_check(vD, "1G", m8, b8, a8, t_idx, a_idx)
+    [m10, b10, a10] = f_check(vW, "1H", m9, b9, a9, t_idx, a_idx)
+    [m11, b11, a11] = f_check(vM, "1A", m10, b10, a10, t_idx, a_idx)
+    [b11, a11]
 
 [best_tf_p, p_bars_ago] = f_get_latest(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM, true)
 [best_tf_v, v_bars_ago] = f_get_latest(r3, r5, r15, r45, r60, r120, r180, r240, rD, rW, rM, false)
-
 // Table
 if show_table and barstate.islast
     pos = table_pos == "Top Right" ? position.top_right : table_pos == "Bottom Right" ? position.bottom_right : table_pos == "Top Left" ? position.top_left : table_pos == "Bottom Left" ? position.bottom_left : position.middle_right
