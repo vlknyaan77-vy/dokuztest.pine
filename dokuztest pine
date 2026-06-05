@@ -51,7 +51,7 @@ get_pi_val(string opt) =>
     clean := str.replace_all(clean, " ", "")
     nz(str.tonumber(clean), 1.0)
 
-f_fill_cluster(float main_val, float[] source_arr, bool only_one) =>
+f_fill_cluster(float main_val, float[] source_arr) =>
     int idx = -1
     if array.size(source_arr) > 0
         for i = 0 to array.size(source_arr) - 1
@@ -61,8 +61,7 @@ f_fill_cluster(float main_val, float[] source_arr, bool only_one) =>
     
     float[] res = array.new_float(0)
     if idx != -1
-        int count = only_one ? 9 : 4
-        for k = 1 to count
+        for k = 1 to 20
             if idx + k < array.size(source_arr)
                 array.push(res, array.get(source_arr, idx + k))
             else
@@ -167,13 +166,10 @@ if barstate.islast
     p_g_main := p_gamma_val_manual
     v_g_main := v_gamma_val_manual
 
-    bool only_p = show_peak and not show_valley
-    bool only_v = show_valley and not show_peak
-
     p_g_prevs := array.new_float(0)
-    p_g_nexts := f_fill_cluster(p_g_main, p_src_arr, only_p)
+    p_g_nexts := f_fill_cluster(p_g_main, p_src_arr)
     v_g_prevs := array.new_float(0)
-    v_g_nexts := f_fill_cluster(v_g_main, v_src_arr, only_v)
+    v_g_nexts := f_fill_cluster(v_g_main, v_src_arr)
 
 // 5. Final Effective Gammas & Sizes
 float p_gamma_val = p_gamma_val_manual
