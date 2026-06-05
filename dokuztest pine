@@ -99,9 +99,10 @@ f_kama_atr(series float src, float n) =>
     kama := nk
     res
 
-f_calc_filter_htf(bool is_peak, float g_val, float a_per, int lb_idx, int lb_v, float a_thr, float a_pt, int p_anc_t, int v_anc_t) =>
+f_calc_filter_htf(float g_val_p, float a_per_p, float g_val_v, float a_per_v, int lb_idx, int lb_v, float a_thr, float a_pt, int p_anc_t, int v_anc_t) =>
     float tr_htf = ta.tr(true)
-    float cur_sz = f_kama_atr(tr_htf, a_per) * g_val
+    float cur_sz_p = f_kama_atr(tr_htf, a_per_p) * g_val_p
+    float cur_sz_v = f_kama_atr(tr_htf, a_per_v) * g_val_v
 
     int hb_49 = ta.highestbars(high, math.min(4990, bar_index + 1))
     int lb_49 = ta.lowestbars(low, math.min(4990, bar_index + 1))
@@ -110,40 +111,68 @@ f_calc_filter_htf(bool is_peak, float g_val, float a_per, int lb_idx, int lb_v, 
     int hb_a  = ta.highestbars(high, math.min(lb_v, bar_index + 1))
     int lb_a  = ta.lowestbars(low, math.min(lb_v, bar_index + 1))
 
-    var int settled_idx = na
-    var float last_f = na
+    var int settled_idx_p = na
+    var int settled_idx_v = na
+    var float last_f_p = na
+    var float last_f_v = na
 
-    int off = lb_idx == 0 ? (is_peak ? hb_49 : lb_49) : lb_idx == 1 ? (is_peak ? hb_15 : lb_15) : (is_peak ? hb_a : lb_a)
-    int raw_ext_idx = bar_index + off
+    int off_p = lb_idx == 0 ? hb_49 : lb_idx == 1 ? hb_15 : hb_a
+    int off_v = lb_idx == 0 ? lb_49 : lb_idx == 1 ? lb_15 : lb_a
 
     if lb_idx == 3 // Zaman (Manuel Çapa)
-        var int anc_idx = na
-        if time <= (is_peak ? p_anc_t : v_anc_t)
-            anc_idx := bar_index
-        settled_idx := anc_idx
+        var int anc_idx_p = na
+        var int anc_idx_v = na
+        if time <= p_anc_t
+            anc_idx_p := bar_index
+        if time <= v_anc_t
+            anc_idx_v := bar_index
+        settled_idx_p := anc_idx_p
+        settled_idx_v := anc_idx_v
     else
-        if na(settled_idx) or (bar_index - settled_idx > lb_v)
-            settled_idx := raw_ext_idx
+        // Peak Anchor
+        if na(settled_idx_p) or (bar_index - settled_idx_p > lb_v)
+            settled_idx_p := bar_index + off_p
         else
-            float dist_pct = not na(last_f) ? math.abs(close - last_f) / last_f * 100 : na
-            bool prox_reset = not na(dist_pct) and dist_pct <= a_pt
-            bool threshold_reset = not na(last_f) and math.abs(close - last_f) > a_thr * cur_sz
-            if prox_reset or threshold_reset
-                settled_idx := raw_ext_idx
+            float dp = not na(last_f_p) ? math.abs(close - last_f_p) / last_f_p * 100 : na
+            if (not na(dp) and dp <= a_pt) or (not na(last_f_p) and math.abs(close - last_f_p) > a_thr * cur_sz_p)
+                settled_idx_p := bar_index + off_p
 
-    var float rfilt = na
-    bool reset = (bar_index == settled_idx) or (ta.change(settled_idx) != 0)
-    float init_val = is_peak ? high[math.max(0, bar_index - nz(settled_idx, bar_index))] : low[math.max(0, bar_index - nz(settled_idx, bar_index))]
+        // Valley Anchor
+        if na(settled_idx_v) or (bar_index - settled_idx_v > lb_v)
+            settled_idx_v := bar_index + off_v
+        else
+            float dv = not na(last_f_v) ? math.abs(close - last_f_v) / last_f_v * 100 : na
+            if (not na(dv) and dv <= a_pt) or (not na(last_f_v) and math.abs(close - last_f_v) > a_thr * cur_sz_v)
+                settled_idx_v := bar_index + off_v
 
-    if reset or na(rfilt)
-        rfilt := init_val
+    var float rfilt_p = na
+    var float rfilt_v = na
+
+    res_p = (bar_index == settled_idx_p) or (ta.change(settled_idx_p) != 0)
+    res_v = (bar_index == settled_idx_v) or (ta.change(settled_idx_v) != 0)
+
+    init_p = high[math.max(0, bar_index - nz(settled_idx_p, bar_index))]
+    init_v = low[math.max(0, bar_index - nz(settled_idx_v, bar_index))]
+
+    if res_p or na(rfilt_p)
+        rfilt_p := init_p
     else
-        if high - cur_sz > rfilt
-            rfilt := high - cur_sz
-        if low + cur_sz < rfilt
-            rfilt := low + cur_sz
-    last_f := rfilt
-    rfilt
+        if high - cur_sz_p > rfilt_p
+            rfilt_p := high - cur_sz_p
+        if low + cur_sz_p < rfilt_p
+            rfilt_p := low + cur_sz_p
+
+    if res_v or na(rfilt_v)
+        rfilt_v := init_v
+    else
+        if high - cur_sz_v > rfilt_v
+            rfilt_v := high - cur_sz_v
+        if low + cur_sz_v < rfilt_v
+            rfilt_v := low + cur_sz_v
+
+    last_f_p := rfilt_p
+    last_f_v := rfilt_v
+    [rfilt_p, rfilt_v]
 
 type FiltState
     float rfilt = na
@@ -459,12 +488,19 @@ alertcondition(settled_p_idx != settled_p_idx[1], "Yeni Tepe", "Otomatik çapa y
 alertcondition(settled_v_idx != settled_v_idx[1], "Yeni Dip", "Otomatik çapa yeni bir dip noktasına sabitlendi!")
 
 // --- MTF LOGIC ---
+int m_idx_eff = lb_mode == "Global (Maksimum)" ? 0 : lb_mode == "Otomatik (Hassasiyet)" ? 1 : lb_mode == "Zaman (Manuel Çapa)" ? 3 : 2
+
+// Stable fallback for security
+s_g_p = p_use_atr_mode ? 9.0 : p_gamma_val_manual
+s_a_p = p_use_atr_mode ? p_atr_val_manual : atr_per
+s_g_v = v_use_atr_mode ? 9.0 : v_gamma_val_manual
+s_a_v = v_use_atr_mode ? v_atr_val_manual : atr_per
+
 f_get_mtf(string tf, bool enabled) =>
     float p = na, float v = na
     if show_mtf and enabled
-        int m_idx = lb_mode == "Global (Maksimum)" ? 0 : lb_mode == "Otomatik (Hassasiyet)" ? 1 : lb_mode == "Zaman (Manuel Çapa)" ? 3 : 2
-        p := request.security(syminfo.tickerid, tf, f_calc_filter_htf(true, p_gamma_val, p_atr_per_eff, m_idx, lb_input, auto_threshold, auto_prox_threshold, p_anchor_time, v_anchor_time))
-        v := request.security(syminfo.tickerid, tf, f_calc_filter_htf(false, v_gamma_val, v_atr_per_eff, m_idx, lb_input, auto_threshold, auto_prox_threshold, p_anchor_time, v_anchor_time))
+        [hp, hv] = request.security(syminfo.tickerid, tf, f_calc_filter_htf(s_g_p, s_a_p, s_g_v, s_a_v, m_idx_eff, lb_input, auto_threshold, auto_prox_threshold, p_anchor_time, v_anchor_time))
+        p := hp, v := hv
     [p, v]
 
 [p1m, v1m] = f_get_mtf("1", tf_1m)
@@ -480,27 +516,28 @@ f_get_mtf(string tf, bool enabled) =>
 [p1D, v1D] = f_get_mtf("D", tf_1D)
 [p1W, v1W] = f_get_mtf("W", tf_1W)
 
-plot(p1m, "1m Peak", color.new(#ffcdd2, 30), 1, plot.style_stepline)
-plot(v1m, "1m Valley", color.new(#c8e6c9, 30), 1, plot.style_stepline)
-plot(p3m, "3m Peak", color.new(#ef9a9a, 30), 1, plot.style_stepline)
-plot(v3m, "3m Valley", color.new(#a5d6a7, 30), 1, plot.style_stepline)
-plot(p5m, "5m Peak", color.new(#e57373, 30), 1, plot.style_stepline)
-plot(v5m, "5m Valley", color.new(#81c784, 30), 1, plot.style_stepline)
-plot(p15m, "15m Peak", color.new(#ef5350, 30), 1, plot.style_stepline)
-plot(v15m, "15m Valley", color.new(#66bb6a, 30), 1, plot.style_stepline)
-plot(p30m, "30m Peak", color.new(#f44336, 30), 1, plot.style_stepline)
-plot(v30m, "30m Valley", color.new(#4caf50, 30), 1, plot.style_stepline)
-plot(p45m, "45m Peak", color.new(#e53935, 30), 1, plot.style_stepline)
-plot(v45m, "45m Valley", color.new(#43a047, 30), 1, plot.style_stepline)
-plot(p1h, "1h Peak", color.new(#d32f2f, 30), 2, plot.style_stepline)
-plot(v1h, "1h Valley", color.new(#388e3c, 30), 2, plot.style_stepline)
-plot(p2h, "2h Peak", color.new(#c62828, 30), 2, plot.style_stepline)
-plot(v2h, "2h Valley", color.new(#2e7d32, 30), 2, plot.style_stepline)
-plot(p3h, "3h Peak", color.new(#b71c1c, 30), 2, plot.style_stepline)
-plot(v3h, "3h Valley", color.new(#1b5e20, 30), 2, plot.style_stepline)
-plot(p4h, "4h Peak", color.new(#ff8a80, 30), 2, plot.style_stepline)
-plot(v4h, "4h Valley", color.new(#b9f6ca, 30), 2, plot.style_stepline)
-plot(p1D, "1D Peak", color.new(#ff5252, 30), 3, plot.style_stepline)
-plot(v1D, "1D Valley", color.new(#69f0ae, 30), 3, plot.style_stepline)
-plot(p1W, "1W Peak", color.new(#ff1744, 30), 4, plot.style_stepline)
-plot(v1W, "1W Valley", color.new(#00e676, 30), 4, plot.style_stepline)
+// Bolder Colors & Styles
+plot(p1m, "1m Peak", color.new(color.maroon, 40), 1, plot.style_stepline)
+plot(v1m, "1m Valley", color.new(color.teal, 40), 1, plot.style_stepline)
+plot(p3m, "3m Peak", color.new(color.red, 40), 1, plot.style_stepline)
+plot(v3m, "3m Valley", color.new(color.green, 40), 1, plot.style_stepline)
+plot(p5m, "5m Peak", color.new(color.fuchsia, 40), 1, plot.style_stepline)
+plot(v5m, "5m Valley", color.new(color.lime, 40), 1, plot.style_stepline)
+plot(p15m, "15m Peak", color.new(color.orange, 20), 2, plot.style_stepline)
+plot(v15m, "15m Valley", color.new(color.blue, 20), 2, plot.style_stepline)
+plot(p30m, "30m Peak", color.new(color.purple, 20), 2, plot.style_stepline)
+plot(v30m, "30m Valley", color.new(color.aqua, 20), 2, plot.style_stepline)
+plot(p45m, "45m Peak", color.new(color.black, 20), 2, plot.style_stepline)
+plot(v45m, "45m Valley", color.new(color.navy, 20), 2, plot.style_stepline)
+plot(p1h, "1h Peak", color.new(color.red, 0), 2, plot.style_stepline)
+plot(v1h, "1h Valley", color.new(color.green, 0), 2, plot.style_stepline)
+plot(p2h, "2h Peak", color.new(color.maroon, 0), 3, plot.style_stepline)
+plot(v2h, "2h Valley", color.new(color.teal, 0), 3, plot.style_stepline)
+plot(p3h, "3h Peak", color.new(color.orange, 0), 3, plot.style_stepline)
+plot(v3h, "3h Valley", color.new(color.blue, 0), 3, plot.style_stepline)
+plot(p4h, "4h Peak", color.new(color.fuchsia, 0), 3, plot.style_stepline)
+plot(v4h, "4h Valley", color.new(color.lime, 0), 3, plot.style_stepline)
+plot(p1D, "1D Peak", color.new(color.yellow, 0), 4, plot.style_stepline)
+plot(v1D, "1D Valley", color.new(color.white, 0), 4, plot.style_stepline)
+plot(p1W, "1W Peak", color.new(color.silver, 0), 5, plot.style_stepline)
+plot(v1W, "1W Valley", color.new(color.gray, 0), 5, plot.style_stepline)
