@@ -249,7 +249,7 @@ if barstate.islast
                 if close[off] > cur_f
                     failed := true, break
             if not failed
-                best_p := g
+                best_p := val
                 break
         
         // Valley Motor
@@ -279,7 +279,7 @@ if barstate.islast
                 if close[off] < cur_f
                     failed := true, break
             if not failed
-                best_v := g
+                best_v := val
                 break
     
     p_g_main := best_p
