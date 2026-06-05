@@ -34,6 +34,7 @@ atr_per        = nz(str.tonumber(atr_opt), 9.0)
 
 show_peak      = input.bool(true, "Tepe Filtresini Göster / Show Peak Filter", group=GRP_VIS)
 show_valley    = input.bool(true, "Dip Filtresini Göster / Show Valley Filter", group=GRP_VIS)
+show_clusters  = input.bool(true, "Ek Katmanları Göster / Show Extra Layers", group=GRP_VIS)
 vis_style      = input.string("Basamaklı (Stepline)", "Çizgi Görsel Stili / Visual Style", options=["Basamaklı (Stepline)", "Diagonal (Eğik)"], group=GRP_VIS)
 peak_color     = input.color(color.red, "Tepe Rengi / Peak Color", group=GRP_VIS)
 valley_color   = input.color(color.green, "Dip Rengi / Valley Color", group=GRP_VIS)
@@ -226,19 +227,19 @@ if barstate.islast
             if not na(val)
                 array.push(dr_p_gammas, val)
     array.push(dr_p_gammas, p_g_main)
-    if array.size(p_g_nexts) > 0
+    if show_clusters and array.size(p_g_nexts) > 0
         for k = 0 to array.size(p_g_nexts) - 1
             val = array.get(p_g_nexts, k)
             if not na(val)
                 array.push(dr_p_gammas, val)
 
-    if array.size(v_g_prevs) > 0
+    if show_clusters and array.size(v_g_prevs) > 0
         for k = array.size(v_g_prevs) - 1 to 0
             val = array.get(v_g_prevs, k)
             if not na(val)
                 array.push(dr_v_gammas, val)
     array.push(dr_v_gammas, v_g_main)
-    if array.size(v_g_nexts) > 0
+    if show_clusters and array.size(v_g_nexts) > 0
         for k = 0 to array.size(v_g_nexts) - 1
             val = array.get(v_g_nexts, k)
             if not na(val)
@@ -303,26 +304,26 @@ if show_table and barstate.islast
     v_label = v_gamma_drawer_sel == "Çekmece 1" ? "G1" : (v_gamma_drawer_sel == "Çekmece 2" ? "G2" : "G3")
     
     str_p_full = ""
-    if array.size(p_g_prevs) > 0
+    if show_clusters and array.size(p_g_prevs) > 0
         for k = array.size(p_g_prevs) - 1 to 0
             v = array.get(p_g_prevs, k)
             if not na(v)
                 str_p_full += str.tostring(v, "#.###") + ", "
     str_p_full += "[" + str.tostring(p_g_main, "#.###") + "]"
-    if array.size(p_g_nexts) > 0
+    if show_clusters and array.size(p_g_nexts) > 0
         for k = 0 to array.size(p_g_nexts) - 1
             v = array.get(p_g_nexts, k)
             if not na(v)
                 str_p_full += ", " + str.tostring(v, "#.###")
 
     str_v_full = ""
-    if array.size(v_g_prevs) > 0
+    if show_clusters and array.size(v_g_prevs) > 0
         for k = array.size(v_g_prevs) - 1 to 0
             v = array.get(v_g_prevs, k)
             if not na(v)
                 str_v_full += str.tostring(v, "#.###") + ", "
     str_v_full += "[" + str.tostring(v_g_main, "#.###") + "]"
-    if array.size(v_g_nexts) > 0
+    if show_clusters and array.size(v_g_nexts) > 0
         for k = 0 to array.size(v_g_nexts) - 1
             v = array.get(v_g_nexts, k)
             if not na(v)
