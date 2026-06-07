@@ -19,17 +19,17 @@ v_anchor_time  = input.time(timestamp("2024-01-01 00:00"), "Dip Çapa Zamanı / 
 
 // --- TEPE GİRDİLERİ (PEAK) ---
 p_gamma_drawer_sel = input.string("Çekmece 4", "Tepe Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4"], group=GRP_FILT_P)
-p_gamma_opt      = input.float(2.25, "Tepe Gamma (G1)", step=1.125, group=GRP_FILT_P)
-p_gamma_opt_2    = input.float(4.5, "Tepe Gamma (G2)", step=2.25, group=GRP_FILT_P)
-p_gamma_opt_3    = input.float(9.0, "Tepe Gamma (G3)", step=4.5, group=GRP_FILT_P)
-p_gamma_opt_4    = input.float(18.0, "Tepe Gamma (G4)", step=9.0, group=GRP_FILT_P)
+p_gamma_opt      = input.float(1.125, "Tepe Gamma (G1)", step=1.125, group=GRP_FILT_P)
+p_gamma_opt_2    = input.float(2.25, "Tepe Gamma (G2)", step=2.25, group=GRP_FILT_P)
+p_gamma_opt_3    = input.float(4.5, "Tepe Gamma (G3)", step=4.5, group=GRP_FILT_P)
+p_gamma_opt_4    = input.float(9.0, "Tepe Gamma (G4)", step=9.0, group=GRP_FILT_P)
 
 // --- DİP GİRDİLERİ (VALLEY) ---
 v_gamma_drawer_sel = input.string("Çekmece 4", "Dip Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4"], group=GRP_FILT_V)
-v_gamma_opt      = input.float(2.25, "Dip Gamma (G1)", step=1.125, group=GRP_FILT_V)
-v_gamma_opt_2    = input.float(4.5, "Dip Gamma (G2)", step=2.25, group=GRP_FILT_V)
-v_gamma_opt_3    = input.float(9.0, "Dip Gamma (G3)", step=4.5, group=GRP_FILT_V)
-v_gamma_opt_4    = input.float(18.0, "Dip Gamma (G4)", step=9.0, group=GRP_FILT_V)
+v_gamma_opt      = input.float(1.125, "Dip Gamma (G1)", step=1.125, group=GRP_FILT_V)
+v_gamma_opt_2    = input.float(2.25, "Dip Gamma (G2)", step=2.25, group=GRP_FILT_V)
+v_gamma_opt_3    = input.float(4.5, "Dip Gamma (G3)", step=4.5, group=GRP_FILT_V)
+v_gamma_opt_4    = input.float(9.0, "Dip Gamma (G4)", step=9.0, group=GRP_FILT_V)
 
 auto_atr       = input.bool(true, "Otomatik ATR Periyodu / Auto ATR Period", group=GRP_VIS)
 atr_mult       = input.float(0.9, "ATR Periyot Çarpanı / ATR Period Multiplier", step=0.1, group=GRP_VIS, tooltip="Otomatik modda zaman dilimi (dakika) bu sayı ile çarpılarak ATR periyodu bulunur.")
