@@ -36,7 +36,7 @@ atr_mult       = input.float(8.1, "ATR Periyot Çarpanı / ATR Period Multiplier
 atr_opt        = input.string(defval="8.1", title="Manuel ATR Periyodu / Manual ATR Period", group=GRP_VIS, options=["0.09", "0.18", "0.225", "0.27", "0.36", "0.45", "0.54", "0.63", "0.72", "0.81", "0.9", "1.0", "1.125", "1.35", "1.8", "2.0", "2.25", "2.7", "3.15", "3.6", "4.05", "4.5", "4.95", "5.4", "5.85", "6.3", "6.75", "7.2", "7.65", "8.1"])
 
 float atr_per_auto = (timeframe.in_seconds() / 60.0) * atr_mult
-float atr_per = auto_atr ? atr_per_auto : nz(str.tonumber(atr_opt), 8.1)
+float atr_per = math.min(4990.0, auto_atr ? atr_per_auto : nz(str.tonumber(atr_opt), 8.1))
 
 show_peak      = input.bool(true, "Tepe Filtresini Göster / Show Peak Filter", group=GRP_VIS)
 show_valley    = input.bool(true, "Dip Filtresini Göster / Show Valley Filter", group=GRP_VIS)
