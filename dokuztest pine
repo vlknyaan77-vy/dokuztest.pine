@@ -39,7 +39,6 @@ float atr_per = auto_atr ? atr_per_auto : nz(str.tonumber(atr_opt), 9.0)
 show_peak      = input.bool(true, "Tepe Filtresini Göster / Show Peak Filter", group=GRP_VIS)
 show_valley    = input.bool(true, "Dip Filtresini Göster / Show Valley Filter", group=GRP_VIS)
 show_clusters  = input.bool(true, "Ek Katmanları Göster / Show Extra Layers", group=GRP_VIS)
-vis_style      = input.string("Basamaklı (Stepline)", "Çizgi Görsel Stili / Visual Style", options=["Basamaklı (Stepline)", "Diagonal (Eğik)"], group=GRP_VIS)
 peak_color     = input.color(color.red, "Tepe Rengi / Peak Color", group=GRP_VIS)
 valley_color   = input.color(color.green, "Dip Rengi / Valley Color", group=GRP_VIS)
 filt_width     = input.int(2, "Çizgi Kalınlığı / Line Width", minval=1, maxval=5, group=GRP_VIS)
@@ -261,11 +260,10 @@ if barstate.islast
             float cf = na, float pf = na
             int s_idx = math.max(bar_index - 4990, p_idx_u)
             float st = high[bar_index-s_idx]
-            bool is_step = vis_style == "Basamaklı (Stepline)"
             for j = s_idx to bar_index
                 off = bar_index - j
                 cf := f_r.upd_filt(high[off], low[off], cur_sz_unit[off] * g, st, j == s_idx)
-                if is_step and not na(pf) and math.abs(pf - cf) > (syminfo.mintick / 10)
+                if not na(pf) and math.abs(pf - cf) > (syminfo.mintick / 10)
                     array.push(pts, chart.point.from_index(j, pf))
                 array.push(pts, chart.point.from_index(j, cf))
                 pf := cf
@@ -284,11 +282,10 @@ if barstate.islast
             float cf = na, float pf = na
             int s_idx = math.max(bar_index - 4990, v_idx_u)
             float st = low[bar_index-s_idx]
-            bool is_step = vis_style == "Basamaklı (Stepline)"
             for j = s_idx to bar_index
                 off = bar_index - j
                 cf := f_r.upd_filt(high[off], low[off], cur_sz_unit[off] * g, st, j == s_idx)
-                if is_step and not na(pf) and math.abs(pf - cf) > (syminfo.mintick / 10)
+                if not na(pf) and math.abs(pf - cf) > (syminfo.mintick / 10)
                     array.push(pts, chart.point.from_index(j, pf))
                 array.push(pts, chart.point.from_index(j, cf))
                 pf := cf
