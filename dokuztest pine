@@ -18,16 +18,18 @@ p_anchor_time  = input.time(timestamp("2024-01-01 00:00"), "Tepe Çapa Zamanı /
 v_anchor_time  = input.time(timestamp("2024-01-01 00:00"), "Dip Çapa Zamanı / Valley Anchor Time", confirm=true, group=GRP_AUTO)
 
 // --- TEPE GİRDİLERİ (PEAK) ---
-p_gamma_drawer_sel = input.string("Çekmece 3", "Tepe Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3"], group=GRP_FILT_P)
-p_gamma_opt      = input.float(4.5, "Tepe Gamma (G1)", step=2.25, group=GRP_FILT_P)
-p_gamma_opt_2    = input.float(9.0, "Tepe Gamma (G2)", step=4.5, group=GRP_FILT_P)
-p_gamma_opt_3    = input.float(18.0, "Tepe Gamma (G3)", step=9.0, group=GRP_FILT_P)
+p_gamma_drawer_sel = input.string("Çekmece 4", "Tepe Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4"], group=GRP_FILT_P)
+p_gamma_opt      = input.float(2.25, "Tepe Gamma (G1)", step=1.125, group=GRP_FILT_P)
+p_gamma_opt_2    = input.float(4.5, "Tepe Gamma (G2)", step=2.25, group=GRP_FILT_P)
+p_gamma_opt_3    = input.float(9.0, "Tepe Gamma (G3)", step=4.5, group=GRP_FILT_P)
+p_gamma_opt_4    = input.float(18.0, "Tepe Gamma (G4)", step=9.0, group=GRP_FILT_P)
 
 // --- DİP GİRDİLERİ (VALLEY) ---
-v_gamma_drawer_sel = input.string("Çekmece 3", "Dip Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3"], group=GRP_FILT_V)
-v_gamma_opt      = input.float(4.5, "Dip Gamma (G1)", step=2.25, group=GRP_FILT_V)
-v_gamma_opt_2    = input.float(9.0, "Dip Gamma (G2)", step=4.5, group=GRP_FILT_V)
-v_gamma_opt_3    = input.float(18.0, "Dip Gamma (G3)", step=9.0, group=GRP_FILT_V)
+v_gamma_drawer_sel = input.string("Çekmece 4", "Dip Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4"], group=GRP_FILT_V)
+v_gamma_opt      = input.float(2.25, "Dip Gamma (G1)", step=1.125, group=GRP_FILT_V)
+v_gamma_opt_2    = input.float(4.5, "Dip Gamma (G2)", step=2.25, group=GRP_FILT_V)
+v_gamma_opt_3    = input.float(9.0, "Dip Gamma (G3)", step=4.5, group=GRP_FILT_V)
+v_gamma_opt_4    = input.float(18.0, "Dip Gamma (G4)", step=9.0, group=GRP_FILT_V)
 
 auto_atr       = input.bool(true, "Otomatik ATR Periyodu / Auto ATR Period", group=GRP_VIS)
 atr_mult       = input.float(0.9, "ATR Periyot Çarpanı / ATR Period Multiplier", step=0.1, group=GRP_VIS, tooltip="Otomatik modda zaman dilimi (dakika) bu sayı ile çarpılarak ATR periyodu bulunur.")
@@ -110,8 +112,8 @@ max_bars_back(close, 5000)
 max_bars_back(time, 5000)
 
 // 2. Manual Gamma Selections
-float p_gamma_val_manual = p_gamma_drawer_sel == "Çekmece 1" ? p_gamma_opt : p_gamma_drawer_sel == "Çekmece 2" ? p_gamma_opt_2 : p_gamma_opt_3
-float v_gamma_val_manual = v_gamma_drawer_sel == "Çekmece 1" ? v_gamma_opt : v_gamma_drawer_sel == "Çekmece 2" ? v_gamma_opt_2 : v_gamma_opt_3
+float p_gamma_val_manual = p_gamma_drawer_sel == "Çekmece 1" ? p_gamma_opt : p_gamma_drawer_sel == "Çekmece 2" ? p_gamma_opt_2 : p_gamma_drawer_sel == "Çekmece 3" ? p_gamma_opt_3 : p_gamma_opt_4
+float v_gamma_val_manual = v_gamma_drawer_sel == "Çekmece 1" ? v_gamma_opt : v_gamma_drawer_sel == "Çekmece 2" ? v_gamma_opt_2 : v_gamma_drawer_sel == "Çekmece 3" ? v_gamma_opt_3 : v_gamma_opt_4
 
 // 3. Anchor & Lookback State
 int lb_input = lb_mode == "Global (Maksimum)" ? 4990 : lb_mode == "Otomatik (Hassasiyet)" ? lb_sens * 150 : auto_lookback
@@ -143,11 +145,11 @@ if barstate.islast
     v_g_main := v_gamma_val_manual
 
     p_g_prevs := array.new_float(0)
-    p_step = p_gamma_drawer_sel == "Çekmece 1" ? 2.25 : p_gamma_drawer_sel == "Çekmece 2" ? 4.5 : 9.0
+    p_step = p_gamma_drawer_sel == "Çekmece 1" ? 1.125 : p_gamma_drawer_sel == "Çekmece 2" ? 2.25 : p_gamma_drawer_sel == "Çekmece 3" ? 4.5 : 9.0
     p_g_nexts := f_fill_cluster(p_g_main, p_step)
 
     v_g_prevs := array.new_float(0)
-    v_step = v_gamma_drawer_sel == "Çekmece 1" ? 2.25 : v_gamma_drawer_sel == "Çekmece 2" ? 4.5 : 9.0
+    v_step = v_gamma_drawer_sel == "Çekmece 1" ? 1.125 : v_gamma_drawer_sel == "Çekmece 2" ? 2.25 : v_gamma_drawer_sel == "Çekmece 3" ? 4.5 : 9.0
     v_g_nexts := f_fill_cluster(v_g_main, v_step)
 
 // 5. Final Effective Gammas & Sizes
@@ -301,8 +303,8 @@ if show_table and barstate.islast
     table.cell(info_tab, 1, 0, "", bgcolor=color.new(color.black, 40))
     table.cell(info_tab, 0, 1, "Parametre", bgcolor=c_bg, text_color=c_txt)
     table.cell(info_tab, 1, 1, "Değer", bgcolor=c_bg, text_color=c_txt)
-    p_label = p_gamma_drawer_sel == "Çekmece 1" ? "G1" : (p_gamma_drawer_sel == "Çekmece 2" ? "G2" : "G3")
-    v_label = v_gamma_drawer_sel == "Çekmece 1" ? "G1" : (v_gamma_drawer_sel == "Çekmece 2" ? "G2" : "G3")
+    p_label = p_gamma_drawer_sel == "Çekmece 1" ? "G1" : (p_gamma_drawer_sel == "Çekmece 2" ? "G2" : (p_gamma_drawer_sel == "Çekmece 3" ? "G3" : "G4"))
+    v_label = v_gamma_drawer_sel == "Çekmece 1" ? "G1" : (v_gamma_drawer_sel == "Çekmece 2" ? "G2" : (v_gamma_drawer_sel == "Çekmece 3" ? "G3" : "G4"))
     
     str_p_full = ""
     if show_clusters and array.size(p_g_prevs) > 0
