@@ -393,7 +393,7 @@ for i = 0 to 12
     string current_status = "-"
     if close > p_v
         current_status := "SAT"
-    elif close < v_v
+    else if close < v_v
         current_status := "AL"
 
     string prev_status = array.get(mtf_res, i)
