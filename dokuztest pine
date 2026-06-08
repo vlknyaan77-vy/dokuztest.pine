@@ -18,7 +18,7 @@ p_anchor_time  = input.time(timestamp("2030-01-01 00:00"), "Tepe Çapa Zamanı /
 v_anchor_time  = input.time(timestamp("2030-01-01 00:00"), "Dip Çapa Zamanı / Valley Anchor Time", confirm=true, group=GRP_AUTO)
 
 // --- TEPE GİRDİLERİ (PEAK) ---
-p_gamma_drawer_sel = input.string("Çekmece 4", "Tepe Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4", "Çekmece 5"], group=GRP_FILT_P)
+p_gamma_drawer_sel = input.string("Çekmece 1", "Tepe Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4", "Çekmece 5"], group=GRP_FILT_P)
 p_gamma_opt      = input.float(1.125, "Tepe Gamma (G1)", step=1.125, minval=0.1, maxval=81.0, group=GRP_FILT_P)
 p_gamma_opt_2    = input.float(2.25, "Tepe Gamma (G2)", step=2.25, minval=0.1, maxval=81.0, group=GRP_FILT_P)
 p_gamma_opt_3    = input.float(4.5, "Tepe Gamma (G3)", step=4.5, minval=0.1, maxval=81.0, group=GRP_FILT_P)
@@ -26,7 +26,7 @@ p_gamma_opt_4    = input.float(9.0, "Tepe Gamma (G4)", step=9.0, minval=0.1, max
 p_gamma_opt_5    = input.float(0.81, "Tepe Gamma (G5)", step=0.81, minval=0.1, maxval=81.0, group=GRP_FILT_P)
 
 // --- DİP GİRDİLERİ (VALLEY) ---
-v_gamma_drawer_sel = input.string("Çekmece 4", "Dip Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4", "Çekmece 5"], group=GRP_FILT_V)
+v_gamma_drawer_sel = input.string("Çekmece 1", "Dip Gamma Çekmece Seçimi", options=["Çekmece 1", "Çekmece 2", "Çekmece 3", "Çekmece 4", "Çekmece 5"], group=GRP_FILT_V)
 v_gamma_opt      = input.float(1.125, "Dip Gamma (G1)", step=1.125, minval=0.1, maxval=81.0, group=GRP_FILT_V)
 v_gamma_opt_2    = input.float(2.25, "Dip Gamma (G2)", step=2.25, minval=0.1, maxval=81.0, group=GRP_FILT_V)
 v_gamma_opt_3    = input.float(4.5, "Dip Gamma (G3)", step=4.5, minval=0.1, maxval=81.0, group=GRP_FILT_V)
@@ -35,7 +35,7 @@ v_gamma_opt_5    = input.float(0.81, "Dip Gamma (G5)", step=0.81, minval=0.1, ma
 
 auto_atr       = input.bool(true, "Otomatik ATR Periyodu / Auto ATR Period", group=GRP_VIS)
 atr_mult       = input.float(8.1, "ATR Periyot Çarpanı / ATR Period Multiplier", step=0.1, group=GRP_VIS, tooltip="Otomatik modda zaman dilimi (dakika) bu sayı ile çarpılarak ATR periyodu bulunur.")
-atr_opt        = input.string(defval="8.1", title="Manuel ATR Periyodu / Manual ATR Period", group=GRP_VIS, options=["0.09", "0.18", "0.225", "0.27", "0.36", "0.45", "0.54", "0.63", "0.72", "0.81", "0.9", "1.0", "1.125", "1.35", "1.8", "2.0", "2.25", "2.7", "3.15", "3.6", "4.05", "4.5", "4.95", "5.4", "5.85", "6.3", "6.75", "7.2", "7.65", "8.1"])
+atr_opt        = input.string(defval="8.1", title="Manuel ATR Periyodu / Manual ATR Period", group=GRP_VIS, options=["0.09", "0.18", "0.225", "0.27", "0.36", "0.45", "0.54", "0.63", "0.72", "0.81", "0.9", "1.0", "1.125", "1.35", "1.8", "2.0", "2.25", "2.7", "3.15", "3.6", "4.05", "4.5", "4.95", "5.4", "5.85", "6.3", "6.75", "7.2", "7.65", "8.1", "9", "13.5", "18", "22.5", "27", "31.5", "36", "40.5", "45", "49.5", "54", "58.5", "63", "67.5", "72", "76.5", "81"])
 
 float atr_per_auto = (timeframe.in_seconds() / 60.0) * atr_mult
 float atr_per = math.min(4990.0, auto_atr ? atr_per_auto : nz(str.tonumber(atr_opt), 8.1))
@@ -362,3 +362,59 @@ if not na(v_idx_label)
 
 alertcondition(settled_p_idx != settled_p_idx[1], "Yeni Tepe", "Otomatik çapa yeni bir tepe noktasına sabitlendi!")
 alertcondition(settled_v_idx != settled_v_idx[1], "Yeni Dip", "Otomatik çapa yeni bir dip noktasına sabitlendi!")
+
+// --- MTF TAKİP SİSTEMİ ---
+f_mtf_data() => [last_f_p, last_f_v]
+
+[p1, v1] = request.security(syminfo.tickerid, "1", f_mtf_data())
+[p3, v3] = request.security(syminfo.tickerid, "3", f_mtf_data())
+[p5, v5] = request.security(syminfo.tickerid, "5", f_mtf_data())
+[p15, v15] = request.security(syminfo.tickerid, "15", f_mtf_data())
+[p30, v30] = request.security(syminfo.tickerid, "30", f_mtf_data())
+[p45, v45] = request.security(syminfo.tickerid, "45", f_mtf_data())
+[p60, v60] = request.security(syminfo.tickerid, "60", f_mtf_data())
+[p120, v120] = request.security(syminfo.tickerid, "120", f_mtf_data())
+[p180, v180] = request.security(syminfo.tickerid, "180", f_mtf_data())
+[p240, v240] = request.security(syminfo.tickerid, "240", f_mtf_data())
+[pD, vD] = request.security(syminfo.tickerid, "1D", f_mtf_data())
+[pW, vW] = request.security(syminfo.tickerid, "1W", f_mtf_data())
+[pM, vM] = request.security(syminfo.tickerid, "1M", f_mtf_data())
+
+var int[] mtf_bars = array.new_int(13, 0)
+var string[] mtf_res = array.new_string(13, "-")
+tfs_labels = array.from("1dk", "3dk", "5dk", "15dk", "30dk", "45dk", "1sa", "2sa", "3sa", "4sa", "1G", "1H", "1A")
+ps = array.from(p1, p3, p5, p15, p30, p45, p60, p120, p180, p240, pD, pW, pM)
+vs = array.from(v1, v3, v5, v15, v30, v45, v60, v120, v180, v240, vD, vW, vM)
+
+for i = 0 to 12
+    p_v = array.get(ps, i)
+    v_v = array.get(vs, i)
+
+    string current_status = "-"
+    if close > p_v
+        current_status := "SAT"
+    elif close < v_v
+        current_status := "AL"
+
+    string prev_status = array.get(mtf_res, i)
+    if current_status != prev_status
+        array.set(mtf_res, i, current_status)
+        array.set(mtf_bars, i, 0)
+    else if current_status != "-"
+        array.set(mtf_bars, i, array.get(mtf_bars, i) + 1)
+    else
+        array.set(mtf_bars, i, 0)
+
+// MTF Tablosu
+if show_table and barstate.islast
+    var table mtf_tab = table.new(position.bottom_right, 3, 14, border_width=1, border_color=color.gray, frame_width=1, frame_color=color.gray)
+    table.cell(mtf_tab, 0, 0, "Periyot", bgcolor=color.new(color.black, 40), text_color=color.yellow)
+    table.cell(mtf_tab, 1, 0, "Sinyal", bgcolor=color.new(color.black, 40), text_color=color.yellow)
+    table.cell(mtf_tab, 2, 0, "Bar", bgcolor=color.new(color.black, 40), text_color=color.yellow)
+
+    for i = 0 to 12
+        sig = array.get(mtf_res, i)
+        sig_color = sig == "AL" ? color.green : sig == "SAT" ? color.red : color.gray
+        table.cell(mtf_tab, 0, i + 1, array.get(tfs_labels, i), bgcolor=color.new(color.gray, 90), text_color=color.white)
+        table.cell(mtf_tab, 1, i + 1, sig, bgcolor=color.new(sig_color, 80), text_color=color.white)
+        table.cell(mtf_tab, 2, i + 1, str.tostring(array.get(mtf_bars, i)), bgcolor=color.new(color.gray, 90), text_color=color.white)
